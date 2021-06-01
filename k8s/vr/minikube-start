@@ -1,0 +1,52 @@
+#!/bin/bash
+
+START=1
+END=2
+
+
+if [ $# -eq 2 ]; then
+    START=$1
+    END=$2
+elif [ $# -eq 1 ]; then
+    END=$1
+fi
+
+
+printCommand () {
+    colour="\e[01;32m"
+    nocolour="\e[0m"
+    echo -e "$colour""$ ""$@" "$nocolour"
+}
+
+runCommand () {
+    printCommand "$@"
+    "$@"
+    if [ $? -ne 0 ]; then
+        echo $@ failed to run
+        exit 1
+    fi
+}
+
+for i in $(seq $START $END); do
+    runCommand minikube start --force --memory="4096" --cpus="2" -b kubeadm --kubernetes-version="v1.19.2" --driver="kvm2" \
+        --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" \
+        --profile="cluster$i"
+
+    runCommand oc get nodes --context=cluster$i
+
+    runCommand minikube ssh "sudo mkdir -p /mnt/vda1/var/lib/rook; sudo ln -s /mnt/vda1/var/lib/rook /var/lib/rook" --profile="cluster$i"
+
+    runCommand sudo -S qemu-img create -f raw /var/lib/libvirt/images/minikube-box2-vm-disk-"cluster$i"-50G 50G
+
+    runCommand virsh -c qemu:///system attach-disk "cluster$i" --source /var/lib/libvirt/images/minikube-box2-vm-disk-"cluster$i"-50G --target vdb --cache none
+
+    runCommand virsh -c qemu:///system reboot --domain "cluster$i"
+
+    runCommand sleep 20
+
+    runCommand minikube ssh "ls /dev/vd*" --profile=cluster$i
+
+    runCommand minikube start --force --memory="4096" --cpus="2" -b kubeadm --kubernetes-version="v1.19.2" --driver="kvm2" \
+        --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" \
+        --profile="cluster$i"
+done

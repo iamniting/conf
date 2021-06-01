@@ -1,0 +1,24 @@
+#!/bin/bash
+
+cd $GOPATH/src/github.com/rook/rook
+git checkout -b release-1.6 origin/release-1.6
+
+oc create -f cluster/examples/kubernetes/ceph/common.yaml --context=cluster1
+oc create -f cluster/examples/kubernetes/ceph/common.yaml --context=cluster2
+
+oc create -f cluster/examples/kubernetes/ceph/crds.yaml --context=cluster1
+oc create -f cluster/examples/kubernetes/ceph/crds.yaml --context=cluster2
+
+oc create -f cluster/examples/kubernetes/ceph/operator.yaml --context=cluster1
+oc create -f cluster/examples/kubernetes/ceph/operator.yaml --context=cluster2
+
+oc create -f ~/code/conf/k8s/vr/ceph-cluster.yaml --context=cluster1
+oc create -f ~/code/conf/k8s/vr/ceph-cluster.yaml --context=cluster2
+
+oc create -f cluster/examples/kubernetes/ceph/toolbox.yaml --context=cluster1
+oc create -f cluster/examples/kubernetes/ceph/toolbox.yaml --context=cluster2
+
+oc config set-context cluster1 --namespace rook-ceph
+oc config set-context cluster2 --namespace rook-ceph
+
+oc config use-context cluster1

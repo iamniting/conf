@@ -1,0 +1,27 @@
+#!/bin/bash
+
+oc create -f ~/code/conf/k8s/vr/ceph-block-pool.yaml --context=cluster1
+oc create -f ~/code/conf/k8s/vr/ceph-block-pool.yaml --context=cluster2
+
+sleep 10
+
+oc get cephblockpools.ceph.rook.io replicapool -o custom-columns=:.status.info.rbdMirrorBootstrapPeerSecretName --context=cluster1
+oc get cephblockpools.ceph.rook.io replicapool -o custom-columns=:.status.info.rbdMirrorBootstrapPeerSecretName --context=cluster2
+
+site_name_cluster1=`oc get cephblockpools.ceph.rook.io replicapool -o jsonpath='{.status.mirroringInfo.site_name}' --context=cluster1`
+site_name_cluster2=`oc get cephblockpools.ceph.rook.io replicapool -o jsonpath='{.status.mirroringInfo.site_name}' --context=cluster2`
+
+token_cluster1=`oc get secret pool-peer-token-replicapool -o jsonpath='{.data.token}' --context=cluster1 | base64 -d`
+token_cluster2=`oc get secret pool-peer-token-replicapool -o jsonpath='{.data.token}' --context=cluster2 | base64 -d`
+
+oc create secret generic "$site_name_cluster2" --from-literal=token="$token_cluster2" --from-literal=pool=replicapool --context=cluster1
+oc create secret generic "$site_name_cluster1" --from-literal=token="$token_cluster1" --from-literal=pool=replicapool --context=cluster2
+
+cat ~/code/conf/k8s/vr/ceph-rbd-mirror.yaml | sed "s/SECRET_NAME/$site_name_cluster2/" | oc --context=cluster1 create -f -
+cat ~/code/conf/k8s/vr/ceph-rbd-mirror.yaml | sed "s/SECRET_NAME/$site_name_cluster1/" | oc --context=cluster2 create -f -
+
+oc get cephblockpools.ceph.rook.io replicapool -o custom-columns=:.status.mirroringStatus --context=cluster1
+oc get cephblockpools.ceph.rook.io replicapool -o custom-columns=:.status.mirroringStatus --context=cluster2
+
+oc create -f ~/code/conf/k8s/vr/sc.yaml --context=cluster1
+oc create -f ~/code/conf/k8s/vr/sc.yaml --context=cluster2
