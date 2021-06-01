@@ -1,0 +1,32 @@
+#!/bin/bash
+
+DIR=${DIR:-~/code/cluster/}
+AWS_PROFILE=${AWS_PROFILE}
+CONFIG_FILE=${CONFIG_FILE:-~/code/private/install-config.yaml}
+
+create () {
+    if [[ -d "$DIR" ]]
+    then
+        echo "$DIR exists, exiting"
+        exit 1
+    fi
+
+    mkdir -p "$DIR"
+    export AWS_PROFILE="$AWS_PROFILE"
+
+    cp "$CONFIG_FILE" "$DIR"
+
+    openshift-install create cluster --dir "$DIR"
+}
+
+destroy () {
+    openshift-install destroy cluster --dir "$DIR"
+}
+
+if [ -z "$1" -o "$1" == "create" ]; then
+    create
+elif [ "$1" == "destroy" ]; then
+    destroy
+else
+    echo "$1" is unknown command
+fi
