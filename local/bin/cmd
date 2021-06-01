@@ -1,0 +1,20 @@
+#!/bin/bash
+
+cat <<- '____EOF'
+# Cut video
+ffmpeg -ss 00:01:00 -to 00:02:00 -i input -c copy output
+
+for i in {01..10}; do find . -maxdepth 1 -name "*S01E$i*" -exec echo {} \;; done
+for i in {01..10}; do find . -maxdepth 1 -name "*S01E$i*" -exec mv {} "E$i.mp4" \;; done
+for i in *.mkv; do ffmpeg -i "$i" -codec copy "${i%.*}.mp4" -y; done
+for i in *.mp4; do mkv-merge "$i" -o "${i%.*}.mkv"; done
+
+# Remove pdf pass
+qpdf --password=pass --decrypt input.pdf output.pdf
+
+# Change img format
+mogrify -format jpg *
+
+# Change pdf to jpg
+mogrify -format jpg -alpha off -density 150 -quality 100 *.pdf
+____EOF
