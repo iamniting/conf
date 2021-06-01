@@ -5,17 +5,20 @@ RESOURCE_RECORD_SET=${RESOURCE_RECORD_SET:-'nigoyal.devcluster.openshift.com'}
 
 HOSTED_ZONE_ID=`aws route53 list-hosted-zones-by-name --dns-name $HOSTED_ZONE --max-items 1 --output json | jq -r ' .HostedZones | first | .Id'`
 
-aws route53 list-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --output json | \
+RECORDS=`aws route53 list-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --output json | \
     jq -r '.ResourceRecordSets[]' | \
     jq "select (.Name | test(\"$RESOURCE_RECORD_SET\"))" | \
     jq -s | \
     jq 'map(.| {Action: "DELETE", ResourceRecordSet: .})' | \
-    jq '{Comment: "Delete RECORDSET", Changes: .}' | tee $$.json | jq
+    jq '{Comment: "Delete RECORDSET", Changes: .}'`
+
+echo $RECORDS | jq
 
 read -p "Enter y to delete records: " option
 
 if [ "$option" == "y" ]; then
+    echo $RECORDS > $$.json
     aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch file://$$.json
+    rm -f $$.json
 fi
 
-rm -f $$.json

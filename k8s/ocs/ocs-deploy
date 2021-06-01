@@ -1,0 +1,84 @@
+#!/bin/bash
+
+REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE:-'nigoyal'}
+IMAGE_TAG=${IMAGE_TAG:-'latest'}
+DOCKER_LOGIN_PASS=${DOCKER_LOGIN_PASS}
+ROOK_IMAGE=${ROOK_IMAGE}
+
+
+printCommand () {
+    colour="\e[01;32m"
+    nocolour="\e[0m"
+    echo -e "$colour""$ ""$@" "$nocolour"
+}
+
+runCommand () {
+    printCommand "$@"
+    "$@"
+    if [ $? -ne 0 ]; then
+        echo $@ failed to run
+        exit 1
+    fi
+}
+
+build () {
+    runCommand sed -i "s/ocs-dev\/ocs-registry:latest/$REGISTRY_NAMESPACE\/ocs-registry:$IMAGE_TAG/" ./deploy/deploy-with-olm.yaml
+
+    runCommand make update-generated
+    runCommand make ocs-operator
+    runCommand make gen-latest-csv
+
+    FileName=deploy/bundle/manifests/ocs-operator.clusterserviceversion.yaml
+    runCommand sed -i "s/containerImage: quay.io\/ocs-dev\/ocs-operator.*$/containerImage: quay.io\/$REGISTRY_NAMESPACE\/ocs-operator:$IMAGE_TAG/" $FileName
+
+    runCommand make ocs-registry
+}
+
+create () {
+    printCommand create catalogsource.operators.coreos.com/ocs-catalogsource
+    cat << '    EOF' | sed -e "s/^    //g" -e "s/REGISTRY_NAMESPACE/$REGISTRY_NAMESPACE/g" -e "s/IMAGE_TAG/$IMAGE_TAG/g" | oc create -f -
+    apiVersion: operators.coreos.com/v1alpha1
+    kind: CatalogSource
+    metadata:
+      name: ocs-catalogsource
+      namespace: openshift-marketplace
+    spec:
+      sourceType: grpc
+      image: quay.io/REGISTRY_NAMESPACE/ocs-registry:IMAGE_TAG
+      displayName: OpenShift Container Storage
+      publisher: Red Hat
+    EOF
+}
+
+delete () {
+    runCommand oc delete catalogsource/ocs-catalogsource -n openshift-marketplace
+}
+
+push () {
+    printCommand docker login quay.io -u \$REGISTRY_NAMESPACE -p \$DOCKER_LOGIN_PASS
+    docker login quay.io -u $REGISTRY_NAMESPACE -p "$DOCKER_LOGIN_PASS"
+
+    runCommand docker push quay.io/$REGISTRY_NAMESPACE/ocs-operator:$IMAGE_TAG
+    runCommand docker push quay.io/$REGISTRY_NAMESPACE/ocs-registry:$IMAGE_TAG
+}
+
+runCommand export REGISTRY_NAMESPACE="$REGISTRY_NAMESPACE"
+runCommand export IMAGE_TAG="$IMAGE_TAG"
+runCommand export ROOK_IMAGE="$ROOK_IMAGE"
+
+
+if [ -z "$1" ]; then
+    build
+    push
+    create
+elif [ "$1" == "build" ]; then
+    build
+elif [ "$1" == "push" ]; then
+    push
+elif [ "$1" == "create" ]; then
+    create
+elif [ "$1" == "delete" ]; then
+    delete
+else
+    echo "$1" is unknown command
+fi
