@@ -1,0 +1,46 @@
+#!/bin/bash
+
+REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE:-'nigoyal'}
+IMAGE_TAG=${IMAGE_TAG:-'latest'}
+ROOK_IMAGE=${ROOK_IMAGE:-'rook-ceph'}
+DOCKER_LOGIN_PASS=${DOCKER_LOGIN_PASS}
+
+printCommand () {
+    colour="\e[01;32m"
+    nocolour="\e[0m"
+    echo -e "$colour""$ ""$@" "$nocolour"
+}
+
+runCommand () {
+    printCommand "$@"
+    "$@"
+    if [ $? -ne 0 ]; then
+        echo $@ failed to run
+        exit 1
+    fi
+}
+
+build () {
+    IMAGE=$(echo build-$(echo $(hostname)-$(pwd) | shasum -a 256 | cut -c1-8)/ceph-$(go env GOARCH))
+    runCommand make IMAGES="ceph" build
+    runCommand docker tag $IMAGE:latest quay.io/$REGISTRY_NAMESPACE/$ROOK_IMAGE:$IMAGE_TAG
+}
+
+push () {
+    printCommand docker login quay.io -u \$REGISTRY_NAMESPACE -p \$DOCKER_LOGIN_PASS
+    docker login quay.io -u $REGISTRY_NAMESPACE -p "$DOCKER_LOGIN_PASS"
+
+    runCommand docker push quay.io/$REGISTRY_NAMESPACE/$ROOK_IMAGE:$IMAGE_TAG
+}
+
+
+if [ -z "$1" ]; then
+    build
+    push
+elif [ "$1" == "build" ]; then
+    build
+elif [ "$1" == "push" ]; then
+    push
+else
+    echo "$1" is unknown command
+fi
