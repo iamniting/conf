@@ -42,7 +42,7 @@ for i in $(seq $START $END); do
 
     runCommand virsh -c qemu:///system reboot --domain "cluster$i"
 
-    runCommand sleep 20
+    runCommand sleep 60
 
     runCommand minikube ssh "ls /dev/vd*" --profile=cluster$i
 
