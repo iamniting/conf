@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for i in {1..255}; do
+    printf "\e[38;5;${i}m   %3s" $i
+    if [ $(($i % 12)) == 0 ] ; then
+        echo
+    fi
+done

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ -z "$2" ]; then
+    go test -v $1
+else
+    go test -v $1 -run $2
+fi

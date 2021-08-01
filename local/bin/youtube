@@ -1,0 +1,5 @@
+#!/bin/bash
+
+fmt=`youtube-dl -F $1 | grep "1280x720" | awk '{print $1}'`
+
+youtube-dl -f $fmt $1

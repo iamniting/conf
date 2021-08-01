@@ -1,0 +1,23 @@
+#!/bin/bash
+
+tracks=""
+# get file extension
+format="${1##*.}"
+
+video=`mkvmerge -i -F json "$1" | jq .tracks[] | jq 'select(.type == "video").id'`
+audio=`mkvmerge -i -F json "$1" | jq .tracks[] | jq 'select(.type == "audio").id'`
+subs=`mkvmerge -i -F json "$1" | jq .tracks[] | jq 'select(.type == "subtitles").id'`
+
+# change file extension
+if [ $format == "mkv" ]; then
+    format="Mkv"
+else
+    format="mkv"
+fi
+
+# order tracks
+for i in $video $audio $subs; do
+    tracks+="0:$i,"
+done
+
+mkvmerge "$1" -o "${1%.*}.$format" --track-order "${tracks%?}"
