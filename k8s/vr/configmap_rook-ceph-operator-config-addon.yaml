@@ -1,0 +1,7 @@
+data:
+  CSI_ENABLE_OMAP_GENERATOR: "true"
+  CSI_ENABLE_VOLUME_REPLICATION: "true"
+  CSI_LOG_LEVEL: "5"
+  # CSI_VOLUME_REPLICATION_IMAGE: "quay.io/csiaddons/volumereplication-operator:v0.1.0"
+  ROOK_CSI_ALLOW_UNSUPPORTED_VERSION: "true"
+  # ROOK_CSI_CEPH_IMAGE: "quay.io/cephcsi/cephcsi:v3.3.0"

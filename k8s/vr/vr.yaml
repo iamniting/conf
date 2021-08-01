@@ -1,0 +1,11 @@
+apiVersion: replication.storage.openshift.io/v1alpha1
+kind: VolumeReplication
+metadata:
+  name: vr1
+spec:
+  volumeReplicationClass: vrc
+  replicationState: primary
+  dataSource:
+    apiGroup: PVC
+    kind: PersistentVolumeClaim
+    name: pvc1 # should be in same namespace as VolumeReplication

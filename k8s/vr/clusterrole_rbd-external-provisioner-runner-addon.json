@@ -1,0 +1,27 @@
+[
+        {
+            "op":"add",
+            "path":"/rules/-",
+            "value":{"apiGroups":["replication.storage.openshift.io"],"resources":["volumereplications"],"verbs":["create","delete","get","list","patch","update","watch"]}
+        },
+        {
+            "op":"add",
+            "path":"/rules/-",
+            "value":{"apiGroups":["replication.storage.openshift.io"],"resources":["volumereplications/finalizers"],"verbs":["update"]}
+        },
+        {
+            "op":"add",
+            "path":"/rules/-",
+            "value":{"apiGroups":["replication.storage.openshift.io"],"resources":["volumereplications/status"],"verbs":["get","patch","update"]}
+        },
+        {
+            "op":"add",
+            "path":"/rules/-",
+            "value":{"apiGroups":["replication.storage.openshift.io"],"resources":["volumereplicationclasses"],"verbs":["create","delete","get","list","patch","update","watch"]}
+        },
+        {
+            "op":"add",
+            "path":"/rules/-",
+            "value":{"apiGroups":["replication.storage.openshift.io"],"resources":["volumereplicationclasses/status"],"verbs":["get"]}
+        }
+]
