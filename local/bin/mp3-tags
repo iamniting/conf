@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -e
+
+# Loop through all MP3 files in the current directory
+for file in *.mp3; do
+    echo "File: $file"
+
+    # Run mid3v2 only once and store its output
+    tags=$(mid3v2 -l "$file")
+
+    # Extract title, artist, and album from the stored output
+    title=$(echo "$tags" | grep TIT2 | cut -d '=' -f2)
+    artist=$(echo "$tags" | grep TPE1 | cut -d '=' -f2)
+    album=$(echo "$tags" | grep TALB | cut -d '=' -f2)
+
+    echo "Current Title : ${title:-'Unknown'}"
+    echo "Current Artist: ${artist:-'Unknown'}"
+    echo "Current Album : ${album:-'Unknown'}"
+
+    # Ask for new values
+    read -p "Enter a new title (leave empty to skip): " new_title
+    read -p "Enter a new artist (leave empty to skip): " new_artist
+    read -p "Enter a new album (leave empty to skip): " new_album
+
+    # Build the command string
+    command="mid3v2"
+
+    # Append options only if new values are provided
+    [ -n "$new_title" ] && command="$command --song=\"$new_title\""
+    [ -n "$new_artist" ] && command="$command --artist=\"$new_artist\""
+    [ -n "$new_album" ] && command="$command --album=\"$new_album\""
+
+    # Run the command if there are any changes to be made
+    if [ "$command" != "mid3v2" ]; then
+        eval "$command \"$file\""
+        echo "Tags updated for: $file"
+    fi
+
+    echo "--------------------------------"
+done
