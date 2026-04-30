@@ -1,0 +1,200 @@
+# The following patch enables a conversion webhook for the CRD
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: rook-ceph/rbd-serving-cert
+  name: volumereplicationclasses.replication.storage.openshift.io
+spec:
+  preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhook:
+      conversionReviewVersions: ["v1", "v1beta1"]
+      clientConfig:
+        service:
+          namespace: rook-ceph
+          name: rbd-webhook-service
+          path: /convert
+---
+# The following patch enables a conversion webhook for the CRD
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: rook-ceph/rbd-serving-cert
+  name: volumereplicationclasses.replication.storage.openshift.io
+spec:
+  preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhook:
+      conversionReviewVersions: ["v1", "v1beta1"]
+      clientConfig:
+        service:
+          namespace: rook-ceph
+          name: rbd-webhook-service
+          path: /convert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rbd-webhook-service
+  namespace: rook-ceph
+spec:
+  ports:
+    - port: 443
+      targetPort: 9443
+  selector:
+    app: csi-rbdplugin-provisioner
+    contains: csi-rbdplugin-metrics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csi-rbdplugin-provisioner
+  namespace: rook-ceph
+spec:
+  template:
+    spec:
+      containers:
+      - name: volume-replication
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert
+---
+# The following manifests contain a self-signed issuer CR and a certificate CR.
+# More document can be found at https://docs.cert-manager.io
+# WARNING: Targets CertManager v1.0. Check https://cert-manager.io/docs/installation/upgrading/ for breaking changes.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: rbd-selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rbd-serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
+spec:
+  # $(SERVICE_NAME) and $(SERVICE_NAMESPACE) will be substituted by kustomize
+  dnsNames:
+  - rbd-webhook-service.rook-ceph.svc
+  - rbd-webhook-service.rook-ceph.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: rbd-selfsigned-issuer
+  secretName: webhook-server-cert # this secret will not be prefixed, since it's not managed by kustomize
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: rook-ceph/rbd-serving-cert
+  creationTimestamp: null
+  name: rbd-mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: rbd-webhook-service
+      namespace: rook-ceph
+      path: /mutate-replication-storage-openshift-io-v1alpha1-volumereplication
+  failurePolicy: Fail
+  name: mvolumereplication.kb.io
+  rules:
+  - apiGroups:
+    - replication.storage.openshift.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - volumereplications
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: rbd-webhook-service
+      namespace: rook-ceph
+      path: /mutate-replication-storage-openshift-io-v1alpha1-volumereplicationclass
+  failurePolicy: Fail
+  name: mvolumereplicationclass.kb.io
+  rules:
+  - apiGroups:
+    - replication.storage.openshift.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - volumereplicationclasses
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: rook-ceph/rbd-serving-cert
+  creationTimestamp: null
+  name: rbd-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: rbd-webhook-service
+      namespace: rook-ceph
+      path: /validate-replication-storage-openshift-io-v1alpha1-volumereplication
+  failurePolicy: Fail
+  name: vvolumereplication.kb.io
+  rules:
+  - apiGroups:
+    - replication.storage.openshift.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - volumereplications
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: rbd-webhook-service
+      namespace: rook-ceph
+      path: /validate-replication-storage-openshift-io-v1alpha1-volumereplicationclass
+  failurePolicy: Fail
+  name: vvolumereplicationclass.kb.io
+  rules:
+  - apiGroups:
+    - replication.storage.openshift.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - volumereplicationclasses
+  sideEffects: None
