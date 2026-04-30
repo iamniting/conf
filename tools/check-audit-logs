@@ -1,0 +1,10 @@
+#!/bin/bash
+
+RESOURCE_NAME=$1
+
+# Get all master nodes
+nodes=$(oc get nodes -l node-role.kubernetes.io/master -o custom-columns=:metadata.name)
+
+for node in $nodes; do
+    oc debug node/$node -- chroot /host bash -c "grep -E '$RESOURCE_NAME.*(create|delete)' /var/log/kube-apiserver/*.log"
+done

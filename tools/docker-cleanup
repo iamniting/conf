@@ -1,0 +1,33 @@
+#!/bin/bash
+
+removeImg() {
+    for i in `docker images | grep none | awk '{print $3}'`; do
+        docker rmi $i
+    done
+}
+
+removeImgAll() {
+    for i in `docker images -a | grep none | awk '{print $3}'`; do
+        docker rmi $i
+    done
+}
+
+imagePrune() {
+    docker image prune
+}
+
+printHelp() {
+    echo "Usage: $0 {removeImg | removeImgAll | imagePrune}"
+    echo ""
+    echo "Commands:"
+    echo "  removeImg       Remove all untagged Docker images (those tagged as <none>)."
+    echo "  removeImgAll    Remove all untagged Docker images including intermediate layers."
+    echo "  imagePrune      Use Docker's built-in command to remove unused images."
+}
+
+
+if [ "$1" == "removeImg" ] || [ "$1" == "removeImgAll" ] || [ "$1" == "imagePrune" ]; then
+    $1
+else
+    printHelp
+fi
