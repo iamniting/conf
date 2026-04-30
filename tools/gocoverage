@@ -1,0 +1,8 @@
+#!/bin/bash
+
+FILE=coverage-$$.out
+
+go test -coverprofile=${FILE} $1
+go tool cover -html=${FILE}
+
+rm -f ${FILE}
