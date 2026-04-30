@@ -1,0 +1,49 @@
+#!/bin/bash
+
+cat <<- '____EOF'
+for i in {01..10}; do find . -maxdepth 1 -name "*S01E$i*" -exec echo {} \;; done
+for i in *.mkv; do ffmpeg -i "$i" -codec copy "${i%.*}.mp4" -y; done
+for i in *.mp4; do mkv-merge "$i" -o "${i%.*}.mkv"; done
+for i in *.mkv; do ffmpeg -i "$i" -codec copy "${i%.*}.mp4" -y; done
+for i in *.mp4; do mkv-merge "$i" -o "${i%.*}.mkv"; done
+
+# Cut video
+ffmpeg -ss 00:01:00 -to 00:02:00 -i input -c copy output
+
+# Remove iphone duplicate photos
+for i in IMG_E*; do mv "$i" "${i/E/}" ; done
+
+# Download mp3 from youtube
+youtube-dl -x --audio-format mp3 <link>
+
+# Remove pdf pass
+qpdf --password=pass --decrypt input.pdf output.pdf
+
+# Change img format
+mogrify -format jpg *
+
+# Change pdf to jpg
+mogrify -format jpg -alpha off -density 150 -quality 100 *.pdf
+
+# Change jpg to pdf
+magick *.jpg output.pdf
+magick image1.jpg image2.jpg image3.jpg output.pdf
+
+# Merge pdfs
+pdfunite input1.pdf input2.pdf output.pdf
+
+# Edit mp3 tags
+mid3v2 --list input.mp3
+mid3v2 --delete-all input.mp3
+mid3v2 --song "title" --artist "name" --album "album" --picture "pic.jpg" input.mp3
+
+# Delete unnecessary tags from mp3
+mid3v2 --delete-frames \
+COMM,MCDI,POPM,PRIV,TBPM,TCAT,TCMP,TCOM,TCON,TCOP,TDAT,TDES,TDRC,TDRL,TENC,\
+TEXT,TGID,TIT1,TIT3,TKEY,TLEN,TMED,TOAL,TOLY,TOPE,TPE2,TPE3,TPE4,TPOS,TPUB,\
+TRCK,TRSN,TSO2,TSOA,TSOC,TSOP,TSOT,TSRC,TSSE,TXXX,TYER,USLT,WCOM,WFED,WOAF,\
+WOAR,WOAS,WORS,WXXX *.mp3
+
+# Extract pic from mp3
+ffmpeg -loglevel error -i input.mp3 -an -vcodec copy cover.jpg
+____EOF
