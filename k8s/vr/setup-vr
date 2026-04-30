@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# oc set image deployment/rook-ceph-operator *=rook/ceph:v1.6.0 --context=cluster1
+# oc set image deployment/rook-ceph-operator *=rook/ceph:v1.6.0 --context=cluster2
+
+# oc create -f https://raw.githubusercontent.com/kube-storage/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplicationclasses.yaml \
+#    --context=cluster1
+# oc create -f https://raw.githubusercontent.com/kube-storage/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplicationclasses.yaml \
+#    --context=cluster2
+
+# oc create -f https://raw.githubusercontent.com/kube-storage/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplications.yaml \
+#    --context=cluster1
+# oc create -f https://raw.githubusercontent.com/kube-storage/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplications.yaml \
+#    --context=cluster2
+
+# oc patch clusterrole/rbd-external-provisioner-runner --type json -p "$(cat ~/code/conf/k8s/vr/clusterrole_rbd-external-provisioner-runner-addon.json)" --context=cluster1
+# oc patch clusterrole/rbd-external-provisioner-runner --type json -p "$(cat ~/code/conf/k8s/vr/clusterrole_rbd-external-provisioner-runner-addon.json)" --context=cluster2
+
+oc patch configmap/rook-ceph-operator-config --patch "$(cat ~/code/conf/k8s/vr/configmap_rook-ceph-operator-config-addon.yaml)" --context=cluster1
+oc patch configmap/rook-ceph-operator-config --patch "$(cat ~/code/conf/k8s/vr/configmap_rook-ceph-operator-config-addon.yaml)" --context=cluster2
+
+oc create -f ~/code/conf/k8s/vr/vrc.yaml --context=cluster1
+oc create -f ~/code/conf/k8s/vr/vrc.yaml --context=cluster2

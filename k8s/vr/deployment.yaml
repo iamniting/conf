@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cirros1
+  labels:
+    app: cirros
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cirros
+  template:
+    metadata:
+      labels:
+        app: cirros
+    spec:
+      containers:
+      - name: cirros
+        image: cirros
+        volumeMounts:
+          - mountPath: /mnt
+            name: mypvc
+      volumes:
+        - name: mypvc
+          persistentVolumeClaim:
+            claimName: pvc1
