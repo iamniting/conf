@@ -1,0 +1,33 @@
+#!/bin/bash
+
+BOOKMARKS_PATH='/home/nigoyal/.config/google-chrome/Profile 1/Bookmarks'
+BOOKMARKS=(`jq -r '.roots.bookmark_bar.children | .[] | select (.name | test("Social")) | .children | .[] | .url' "$BOOKMARKS_PATH"`)
+
+START=${1:-1}
+END=${2:-${#BOOKMARKS[@]}}
+BATCH=${3:-10}
+
+declare -i count=0
+
+for i in $(seq "$START" "$END"); do
+
+    google-chrome "${BOOKMARKS[i - 1]}" 2> /dev/null
+
+    count+=1
+
+    if [ $count -eq $BATCH ]; then
+        count=0
+        echo $i bookmarks are opened out of $END
+
+        # exit without asking for option if last bookmarks
+        [ $i -eq $END ] && exit
+
+        select yn in "Continue" "Exit"; do
+            case $yn in
+                Continue ) break;;
+                Exit ) exit 0;;
+            esac
+        done
+    fi
+
+done

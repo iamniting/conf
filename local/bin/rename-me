@@ -1,0 +1,17 @@
+#!/bin/bash
+
+FILETYPE='jpg'
+
+ls *.$FILETYPE --color=never | sed "s/.$FILETYPE//" | sed 's/[0-9]//g' | sort -u |
+while read -r name;
+do
+
+    count=$(find . -maxdepth 1 -regex "./$name[0-9]+.$FILETYPE" | sort -V | wc -l)
+
+    for i in $(seq 1 ${count});
+    do
+        photo=$(find . -maxdepth 1 -regex "./$name[0-9]+.$FILETYPE" | sort -V | sed -n ${i}p)
+        mv "${photo}" "${name}${i}.$FILETYPE" 2>&1 | grep -v "are the same file"
+    done
+
+done

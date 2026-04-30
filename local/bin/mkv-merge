@@ -1,0 +1,15 @@
+#!/bin/bash
+
+mkvmerge -d 0 -a 1,2 -s 3,4 -M -B -T \
+    --no-global-tags --no-chapters --title "" \
+    --language 0:und --track-name 0:"" --default-track 0:true \
+    --language 1:und --track-name 1:"" --default-track 1:true \
+    --language 2:und --track-name 2:"" --default-track 2:true \
+    --language 3:und --track-name 3:"" --default-track 3:true \
+    --language 4:und --track-name 4:"" --default-track 4:true \
+    --language 5:und --track-name 5:"" --default-track 5:true \
+    --language 6:und --track-name 6:"" --default-track 6:true \
+    --language 7:und --track-name 7:"" --default-track 7:true \
+    --language 8:und --track-name 8:"" --default-track 8:true \
+    --language 9:und --track-name 9:"" --default-track 9:true \
+    "$@"
