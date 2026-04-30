@@ -1,0 +1,36 @@
+#!/bin/bash
+
+CRDS="
+cephblockpools.ceph.rook.io
+cephclients.ceph.rook.io
+cephclusters.ceph.rook.io
+cephfilesystemmirrors.ceph.rook.io
+cephfilesystems.ceph.rook.io
+cephnfses.ceph.rook.io
+cephobjectrealms.ceph.rook.io
+cephobjectstores.ceph.rook.io
+cephobjectstoreusers.ceph.rook.io
+cephobjectzonegroups.ceph.rook.io
+cephobjectzones.ceph.rook.io
+cephrbdmirrors.ceph.rook.io
+
+backingstores.noobaa.io
+bucketclasses.noobaa.io
+namespacestores.noobaa.io
+noobaas.noobaa.io
+
+ocsinitializations.ocs.openshift.io
+storageclusters.ocs.openshift.io
+"
+
+Dummy="
+storagesystems.odf.openshift.io
+
+ibmblockcsis.csi.ibm.com
+
+flashsystemclusters.odf.ibm.com
+"
+
+OC_CRDS=`echo $CRDS | sed 's/ /,/g'`
+
+oc get --no-headers "$OC_CRDS" | awk '{print $1}'

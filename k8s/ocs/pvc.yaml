@@ -1,0 +1,13 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc1
+  annotations:
+    volume.beta.kubernetes.io/storage-class: ocs-storagecluster-cephfs
+spec:
+  persistentVolumeReclaimPolicy: Delete
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
